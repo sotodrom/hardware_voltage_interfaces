@@ -172,6 +172,11 @@ bool SupportManager::modeSupported(Mode type) {
     if (it == kModeEarliestVersionMap.end() || IPower::version < it->second) {
         return false;
     }
+
+    if (type == Mode::DOUBLE_TAP_TO_WAKE) {
+        return true;
+    }
+    
     bool supported = HintManager::GetInstance()->IsHintSupported(toString(type));
     // LOW_POWER handled insides PowerHAL specifically
     if (type == Mode::LOW_POWER) {

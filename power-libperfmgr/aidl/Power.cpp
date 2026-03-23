@@ -50,6 +50,7 @@ using ::android::perfmgr::HintManager;
 constexpr char kPowerHalStateProp[] = "vendor.powerhal.state";
 constexpr char kPowerHalAudioProp[] = "vendor.powerhal.audio";
 constexpr char kPowerHalRenderingProp[] = "vendor.powerhal.rendering";
+constexpr char kTapToWakeNode[] = "/proc/tpd_gesture";
 
 extern bool isDeviceSpecificModeSupported(Mode type, bool* _aidl_return);
 extern bool setDeviceSpecificMode(Mode type, bool enabled);
@@ -104,13 +105,23 @@ ndk::ScopedAStatus Power::setMode(Mode type, bool enabled) {
             }
             mSustainedPerfModeOn = true;
             break;
+        case Mode::DOUBLE_TAP_TO_WAKE:
+            {
+                // Записываем 1 (включено) или 0 (выключено) в узел ядра
+                bool success = ::android::base::WriteStringToFile(enabled ? "1" : "0", kTapToWakeNode);
+                if (!success) {
+                    PLOG(ERROR) << "Failed to write to tap to wake node: " << kTapToWakeNode;
+                }
+                // Возвращаем OK, чтобы не проваливаться в default (DoHint)
+                return ndk::ScopedAStatus::ok();
+            }            
         case Mode::LAUNCH:
             if (mSustainedPerfModeOn) {
                 break;
             }
             [[fallthrough]];
-        case Mode::DOUBLE_TAP_TO_WAKE:
-            [[fallthrough]];
+        // case Mode::DOUBLE_TAP_TO_WAKE: 
+        //    [[fallthrough]];
         case Mode::FIXED_PERFORMANCE:
             [[fallthrough]];
         case Mode::EXPENSIVE_RENDERING:
